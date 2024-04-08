@@ -64,6 +64,8 @@ int main(int argc, char* argv[])
 	glfwMakeContextCurrent(window);
 	// set the key callback function for the main window
 	glfwSetKeyCallback(window, key_callback);
+	// set minimum buffer swap interval
+	glfwSwapInterval(1);
 	// set window icon
 	int width, height, channels;
 	unsigned char* pixels = stbi_load("./src/lbs-icon.png", &width, &height, &channels, 4);
