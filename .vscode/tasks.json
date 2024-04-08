@@ -1,0 +1,31 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "C/C++: g++.exe build active file",
+			"command": "C:\\msys64\\mingw64\\bin\\g++.exe",
+			"args": [
+				"-g", // flag for debugging in GDB
+				"-I${workspaceFolder}\\include", // adds dir to search path for linking files to the front of the include list
+				"-L${workspaceFolder}\\lib", // adds dir to search for path -l
+				"${workspaceFolder}\\src\\*.cpp", // compile all .cpp files in src
+				"${workspaceFolder}\\src\\glad.c", // don't forget glad.c
+				"-lglfw3dll", // include the glfw3dll library
+				"-o", // specify output file
+				"${workspaceFolder}\\lbs.exe" // output file name
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true,
+			},
+			"detail": "compiler: C:\\msys64\\mingw64\\bin\\g++.exe"
+		}
+	]
+}
