@@ -7,7 +7,7 @@
 			"command": "C:\\msys64\\mingw64\\bin\\g++.exe",
 			"args": [
 				"-g", // flag for debugging in GDB
-				"-I${workspaceFolder}\\include", // adds dir to search path for linking files to the front of the include list
+				"-I${workspaceFolder}\\external", // adds dir to search path for linking files to the front of the include list
 				"-L${workspaceFolder}\\lib", // adds dir to search for path -l
 				"${workspaceFolder}\\src\\*.cpp", // compile all .cpp files in src
 				"${workspaceFolder}\\src\\glad.c", // don't forget glad.c
