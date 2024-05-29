@@ -34,6 +34,12 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
+// window resize callback function
+static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
+}
+
 int main(int argc, char* argv[]) 
 {
 	// attempt to initialize glfw
@@ -62,9 +68,8 @@ int main(int argc, char* argv[])
 	}
 	// before the OpenGL API can be used, a current OpenGL context must be acquired
 	glfwMakeContextCurrent(window);
-	// set the key callback function for the main window
 	glfwSetKeyCallback(window, key_callback);
-	// set minimum buffer swap interval
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSwapInterval(1);
 	// set window icon
 	int width, height, channels;
@@ -84,23 +89,106 @@ int main(int argc, char* argv[])
 	}
 
 
-	// setup a full screen quad to display our renders on
+	// vertex shader
+	const char *vertexShaderSource = "#version 410 core\n"
+		"layout (location = 0) in vec3 aPos;\n"
+		"void main()\n"
+		"{\n"
+		"	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+		"}\0";
+	GLuint vertexShader;
+	vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+	glCompileShader(vertexShader);
+	int shaderSuccess;
+	char infoLog[512];
+	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &shaderSuccess);
+	if (!shaderSuccess)
+	{
+		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+		std::cout << "Failed to compile vertex shader" << std::endl << infoLog << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+
+	// fragment shader
+	const char *fragShaderSource = "#version 410 core \n"
+		"out vec4 FragColor;\n"
+		"void main()\n"
+		"{\n"
+		"	FragColor = vec4(0.2f, 0.2f, 0.9f, 1.0f);\n"
+		"}\0";
+	GLuint fragmentShader;
+	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragmentShader, 1, &fragShaderSource, NULL);
+	glCompileShader(fragmentShader);
+	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &shaderSuccess);
+	if (!shaderSuccess)
+	{
+		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+		std::cout << "Failed to compile fragment shader" << std::endl << infoLog << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+
+	// shader program
+	GLuint shaderProgram = glCreateProgram();
+	glAttachShader(shaderProgram, vertexShader);
+	glAttachShader(shaderProgram, fragmentShader);
+	glLinkProgram(shaderProgram);
+	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &shaderSuccess);
+	if (!shaderSuccess) {
+		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+		std::cout << "Failed to compile fragment shader" << std::endl << infoLog << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+
+	
+	// setup a full screen quad to display our renders on with a texture
 	float vertices[] = {
 		-1.0f, -1.0f, 0.0f,
 		-1.0f,  1.0f, 0.0f,
 		 1.0f, -1.0f, 0.0f,
+		 1.0f,  1.0f, 0.0f
 	};
-	// VertexBufferObject
-	GLuint VBO;
+	unsigned int indices[] = {
+		0, 1, 2,
+		1, 2, 3
+	};
+	// VertexBufferObject and VertexArrayObject
+	GLuint VAO, VBO, EBO;
+	// gen vao and buffers
+	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	// bind vao
+	glBindVertexArray(VAO);
+	
+	// bind vbo and set data
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	
+	// bind ebo and set data
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	
+	// enable vertex position attrib
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
 
+	// unbind buffer and vao
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 	
 
+	// timing variables
 	double t0 = glfwGetTime();
 	double t, tau;
 	double dtau = 0.001; // time-step for physics in seconds
+
 	// main loop while the window is open
 	while (!glfwWindowShouldClose(window))
 	{
@@ -117,14 +205,23 @@ int main(int argc, char* argv[])
 		// // render the current state
 		// render(state);
 
+		// display the rendering using OpenGL
+        glClear(GL_COLOR_BUFFER_BIT);
+		glUseProgram(shaderProgram);
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 		// swap buffer being displayed
 		glfwSwapBuffers(window);
-		// look for events
 		glfwPollEvents();
 	}
 
 
 	// OpenGL cleanup
+	glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+    glDeleteProgram(shaderProgram);
 	glfwDestroyWindow(window);
 
 	// close glfw
